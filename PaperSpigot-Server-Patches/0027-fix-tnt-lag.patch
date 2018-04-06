@@ -1,0 +1,118 @@
+From 885ec1c93f01a87a6c59914919e9777aca73d687 Mon Sep 17 00:00:00 2001
+From: daniel <cens097541@gmail.com>
+Date: Thu, 5 Apr 2018 21:52:34 +0200
+Subject: [PATCH] fix-tnt-lag
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityTNTPrimed.java b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+index 872d9659..a8ed3446 100644
+--- a/src/main/java/net/minecraft/server/EntityTNTPrimed.java
++++ b/src/main/java/net/minecraft/server/EntityTNTPrimed.java
+@@ -27,17 +27,25 @@ public class EntityTNTPrimed extends Entity {
+     public EntityTNTPrimed(org.bukkit.Location loc, World world, double d0, double d1, double d2, EntityLiving entityliving) {
+         this(loc, world);
+         this.setPosition(d0, d1, d2);
+-        float f = (float) (Math.random() * 3.1415927410125732D * 2.0D);
++		this.motX = this.motZ = 0.0F;
++		
++		/////// brutalspigot fix tnt lag /////////
++		
++		if(!world.paperSpigotConfig.fixCannons){
++			float f = (float) (Math.random() * 3.1415927410125732D * 2.0D);
++			this.motX = (double) (-((float) Math.sin((double) f)) * 0.02F);
++			this.motZ = (double) (-((float) Math.cos((double) f)) * 0.02F);
++		
++		}
++		
++		/////// brutalspigot fix tnt lag /////////
+ 
+-        this.motX = (double) (-((float) Math.sin((double) f)) * 0.02F);
+         this.motY = 0.20000000298023224D;
+-        this.motZ = (double) (-((float) Math.cos((double) f)) * 0.02F);
+         this.fuseTicks = 80;
+         this.lastX = d0;
+         this.lastY = d1;
+         this.lastZ = d2;
+         this.source = entityliving;
+-        if (world.paperSpigotConfig.fixCannons) this.motX = this.motZ = 0.0F; // PaperSpigot - Fix cannons
+     }
+ 
+     protected void h() {}
+@@ -90,7 +98,8 @@ public class EntityTNTPrimed extends Entity {
+             // CraftBukkit end
+         } else {
+             this.W();
+-            this.world.addParticle(EnumParticle.SMOKE_NORMAL, this.locX, this.locY + 0.5D, this.locZ, 0.0D, 0.0D, 0.0D, new int[0]);
++            		/////// brutalspigot fix tnt lag /////////
++			// this.world.addParticle(EnumParticle.SMOKE_NORMAL, this.locX, this.locY + 0.5D, this.locZ, 0.0D, 0.0D, 0.0D, new int[0]);
+         }
+ 
+     }
+@@ -190,10 +199,15 @@ public class EntityTNTPrimed extends Entity {
+         this.motX = oldMotX;
+         this.motY = oldMotY;
+         this.motZ = oldMotZ;
+-
++		
++		/////// brutalspigot fix tnt lag /////////
++		
++		/*
+         if (this.inWater) {
+             // Send position and velocity updates to nearby players on every tick while the TNT is in water.
+             // This does pretty well at keeping their clients in sync with the server.
++			
++					
+             EntityTrackerEntry ete = ((WorldServer) this.getWorld()).getTracker().trackedEntities.get(this.getId());
+             if (ete != null) {
+                 PacketPlayOutEntityVelocity velocityPacket = new PacketPlayOutEntityVelocity(this);
+@@ -206,8 +220,12 @@ public class EntityTNTPrimed extends Entity {
+                     }
+                 }
+             }
++			
+         }
+-
++		*/
++		/////// brutalspigot fix tnt lag /////////
++		
++		
+         return this.inWater;
+     }
+     // PaperSpigot end
+diff --git a/src/main/java/net/minecraft/server/Explosion.java b/src/main/java/net/minecraft/server/Explosion.java
+index f4ccd8d4..05395c50 100644
+--- a/src/main/java/net/minecraft/server/Explosion.java
++++ b/src/main/java/net/minecraft/server/Explosion.java
+@@ -231,8 +231,13 @@ public class Explosion {
+             while (iterator.hasNext()) {
+                 blockposition = (BlockPosition) iterator.next();
+                 Block block = this.world.getType(blockposition).getBlock();
++				
++			    /////// brutalspigot fix tnt lag /////////
++
++               // world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
++			   
++			    /////// brutalspigot fix tnt lag /////////
+ 
+-                world.spigotConfig.antiXrayInstance.updateNearbyBlocks(world, blockposition); // Spigot
+                 if (flag) {
+                     double d0 = (double) ((float) blockposition.getX() + this.world.random.nextFloat());
+                     double d1 = (double) ((float) blockposition.getY() + this.world.random.nextFloat());
+@@ -251,8 +256,12 @@ public class Explosion {
+                     d3 *= d7;
+                     d4 *= d7;
+                     d5 *= d7;
+-                    this.world.addParticle(EnumParticle.EXPLOSION_NORMAL, (d0 + this.posX * 1.0D) / 2.0D, (d1 + this.posY * 1.0D) / 2.0D, (d2 + this.posZ * 1.0D) / 2.0D, d3, d4, d5, new int[0]);
+-                    this.world.addParticle(EnumParticle.SMOKE_NORMAL, d0, d1, d2, d3, d4, d5, new int[0]);
++					
++					/////// brutalspigot fix tnt lag /////////
++                   // this.world.addParticle(EnumParticle.EXPLOSION_NORMAL, (d0 + this.posX * 1.0D) / 2.0D, (d1 + this.posY * 1.0D) / 2.0D, (d2 + this.posZ * 1.0D) / 2.0D, d3, d4, d5, new int[0]);
++                   // this.world.addParticle(EnumParticle.SMOKE_NORMAL, d0, d1, d2, d3, d4, d5, new int[0]);
++					/////// brutalspigot fix tnt lag /////////
++
+                 }
+ 
+                 if (block.getMaterial() != Material.AIR) {
+-- 
+2.14.3.windows.1
+
